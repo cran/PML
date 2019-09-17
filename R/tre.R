@@ -4,8 +4,8 @@
 #'
 #' @importFrom"dplyr"
 #' '%>%'
-#' @importFrom"dplyr"
-#' mutate
+#' @importFrom"tibble"
+#' add_column
 #' @importFrom"trelliscopejs"
 #' trelliscope
 #' @importFrom"trelliscopejs"
@@ -65,25 +65,36 @@ tre <- function(lis,id=NULL,varlis=NULL,smband=1/12,maxday=14,plot.ind=TRUE,plot
   ID_Nday <- activity <- activity_ind <- activity_max <- activity_all <- NULL #required to avoid NOTE in CMD check
   act <- data.frame(ID=as.numeric(unlist(ID)),
                     ID_Nday=unlist(lapply(ID,function(x) seq(1,length(x)))))
+  ### merge with other datasets
+  if(!is.null(varlis)) {
+    deltadf <- data.frame(ID=act$ID)
+    deltadf <- merge(deltadf,varlis,by="ID",all.x=TRUE)
+    act <- cbind(act,deltadf[,-1]);rm(deltadf)
+  }
+  ##format
   act <- dplyr::tbl_df(act)
   act <- dplyr::group_by(act,ID,ID_Nday)
-  act <- tidyr::nest(act)
-
+  act <- tidyr::nest(act,data=c())
+  
   #### activity
   liscol <- do.call("cbind",lis)
   liscol2 <- list()
   for(i in 1:ncol(liscol)) liscol2[[i]] <- liscol[,i]
-  act <- dplyr::mutate(act,activity=liscol2);rm(liscol)
+  #act <- dplyr::mutate(act,activity=liscol2);rm(liscol) updated function due to changes in the tidyr package
+  act <- tibble::add_column(act,activity = liscol2);rm(liscol)
   act$data <- NULL
   ## smoothed activity
-  act <- dplyr::mutate(act,activity_sm=lapply(act$activity,function(x) round(lowess(x[c((length(x)*(1-smband)+1):length(x),1:length(x),1:(length(x)*smband))],f=smband)$y[(length(x)*smband+1):(length(x)*(1+smband))],1)))
+  #act <- dplyr::mutate(act,activity_sm=lapply(act$activity,function(x) round(lowess(x[c((length(x)*(1-smband)+1):length(x),1:length(x),1:(length(x)*smband))],f=smband)$y[(length(x)*smband+1):(length(x)*(1+smband))],1))) updated function due to changes in the tidyr package
+  act <- tibble::add_column(act,activity_sm=lapply(act$activity,function(x) round(lowess(x[c((length(x)*(1-smband)+1):length(x),1:length(x),1:(length(x)*smband))],f=smband)$y[(length(x)*smband+1):(length(x)*(1+smband))],1)))
   ## individual mean activity
-  act <- dplyr::mutate(act,activity_ind=lapply(ind_to_day(lapply(lis,rowMeans),act),function(x) round(x,1)))
+  #act <- dplyr::mutate(act,activity_ind=lapply(ind_to_day(lapply(lis,rowMeans),act),function(x) round(x,1))) updated function due to changes in the tidyr package
+  act <- tibble::add_column(act,activity_ind=lapply(ind_to_day(lapply(lis,rowMeans),act),function(x) round(x,1)))
   ## global mean activity
   mean_global <- round(rowMeans(do.call("cbind",act$activity_ind)),1)
   temp <- list()
   for(i in 1:nrow(act)) temp[[i]] <- mean_global
-  act <- dplyr::mutate(act,activity_all=temp)
+  #act <- dplyr::mutate(act,activity_all=temp) updated function due to changes in the tidyr package
+  act <- tibble::add_column(act,activity_all=temp)
   rm(temp,mean_global)
 
   #### filter stats
@@ -103,21 +114,12 @@ tre <- function(lis,id=NULL,varlis=NULL,smband=1/12,maxday=14,plot.ind=TRUE,plot
 
   ####plot individuals (average over days) or days
   if(plot.ind==TRUE) {
-    act <- act[!duplicated(act$ID),]
-    act$activity <- act$activity_sm <- NULL
-
-    ### merge with other datasets
-    if(!is.null(varlis)) {
-      deltadf <- data.frame(ID=unique(act$ID))
-      deltadf <- merge(deltadf,varlis,by="ID",all.x=TRUE)
-      act <- cbind(act,deltadf[,-1]);rm(deltadf)
-    }
-
-    ### generate plot: ind vs global
+        ### generate plot: ind vs global
     ptm <- Sys.time()
     message("Generating trelliscope individual plots... It may take some time.")
     ind <- act[!duplicated(act$ID),]
-    ind <- dplyr::mutate(act,panel = trelliscopejs::pmap_plot(list(ind$ID,ind$activity_ind,
+    ind$activity <- ind$activity_sm <- NULL
+    ind <- tibble::add_column(ind,panel = trelliscopejs::pmap_plot(list(ind$ID,ind$activity_ind,
                                                                    ind$activity_all,smband,plot.ori,plot.sm), ind_plot))
     message(paste("Total time: ",round(difftime(Sys.time(),ptm,units="mins")[[1]],2)," mins",sep=""))
 
@@ -136,22 +138,18 @@ tre <- function(lis,id=NULL,varlis=NULL,smband=1/12,maxday=14,plot.ind=TRUE,plot
     }
 
   } else {
-    ## merge with other datasets
-    if(!is.null(varlis)) {
-      deltadf <- data.frame(ID=unique(act$ID))
-      deltadf <- merge(deltadf,varlis,by="ID",all.x=TRUE)
-      deltadf2 <- apply(deltadf,2,function(y) ind_to_day(x=y,df=act))
-      act <- cbind(act,deltadf2[,-1]);rm(deltadf,deltadf2)
-    }
+    
     ## auxillary information for plotting: y-axis activity max
-    act <- dplyr::mutate(act,activity_max = ind_to_day(unlist(lapply(split(act$activity_sm,act$ID),function(x)
+    act <- tibble::add_column(act,activity_max = ind_to_day(unlist(lapply(split(act$activity_sm,act$ID),function(x)
         max(unlist(lapply(x,max))))),act))
 
     ## generate plot: day observation
     ptm <- Sys.time()
     message("Generating trelliscope activity day plots... It may take some time.")
-    act <- dplyr::mutate(act,panel = trelliscopejs::pmap_plot(list(id=ID,id_Nday=ID_Nday,act_ori=activity,act_ind=activity_ind,
-                                    act_all=activity_all,act_max=activity_max,band=smband,ori=plot.ori,lw=plot.sm), act_plot))
+    act <- tibble::add_column(act,panel = trelliscopejs::pmap_plot(list(id=act$ID,id_Nday=act$ID_Nday,
+                                                                        act_ori=act$activity,act_ind=act$activity_ind,
+                                                                        act_all=act$activity_all,act_max=act$activity_max,
+                                                                        band=smband,ori=plot.ori,lw=plot.sm), act_plot))
     message(paste("Total time: ",round(difftime(Sys.time(),ptm,units="mins")[[1]],3)," mins",sep=""))
     #check memory: format(object.size(act),units="Mb",standard="legacy")
 
