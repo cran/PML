@@ -6,10 +6,6 @@
 #' '%>%'
 #' @importFrom"tibble"
 #' add_column
-#' @importFrom"trelliscopejs"
-#' trelliscope
-#' @importFrom"trelliscopejs"
-#' pmap_plot
 #' @import"rbokeh"
 #'
 #' @param lis the list of activity data, with each element corresponding to the observation by one individual and the name of each element coresponding to the individual id. Specifically, each element is a \code{nob} by \code{nday} matrix, where each column is an observation by day.
@@ -115,27 +111,32 @@ tre <- function(lis,id=NULL,varlis=NULL,smband=1/12,maxday=14,plot.ind=TRUE,plot
   ####plot individuals (average over days) or days
   if(plot.ind==TRUE) {
         ### generate plot: ind vs global
-    ptm <- Sys.time()
-    message("Generating trelliscope individual plots... It may take some time.")
+    #ptm <- Sys.time()
+    message("No trelliscope individual plots are generated due to the archived trelliscopejs package.")
     ind <- act[!duplicated(act$ID),]
     ind$activity <- ind$activity_sm <- NULL
-    ind <- tibble::add_column(ind,panel = trelliscopejs::pmap_plot(list(ind$ID,ind$activity_ind,
-                                                                   ind$activity_all,smband,plot.ori,plot.sm), ind_plot))
-    message(paste("Total time: ",round(difftime(Sys.time(),ptm,units="mins")[[1]],2)," mins",sep=""))
+    #ind <- tibble::add_column(ind,panel = trelliscopejs::pmap_plot(list(ind$ID,ind$activity_ind,
+    #                                                               ind$activity_all,smband,plot.ori,plot.sm), ind_plot))
+    #message(paste("Total time: ",round(difftime(Sys.time(),ptm,units="mins")[[1]],2)," mins",sep=""))
 
     ## trelliscope plot
+    #if(plot.tre==TRUE) {
+    #  ind$activity_ind <- ind$activity_all <- NULL
+    #  if(is.null(plot.tre.path)) {
+    #    trelliscopejs::trelliscope(ind,name = "Individual Mean Activity Plot", nrow = 2, ncol = 2,
+    #                  path=getwd())
+    #  } else {
+    #    trelliscopejs::trelliscope(ind,name = "Individual Mean Activity Plot", nrow = 2, ncol = 2,
+    #                  path=plot.tre.path)
+    #  }
+    #} else {
+    #  return(ind)
+    #}
+    
     if(plot.tre==TRUE) {
-      ind$activity_ind <- ind$activity_all <- NULL
-      if(is.null(plot.tre.path)) {
-        trelliscopejs::trelliscope(ind,name = "Individual Mean Activity Plot", nrow = 2, ncol = 2,
-                      path=getwd())
-      } else {
-        trelliscopejs::trelliscope(ind,name = "Individual Mean Activity Plot", nrow = 2, ncol = 2,
-                      path=plot.tre.path)
-      }
-    } else {
-      return(ind)
+      print("plot.tre=TRUE but no plot is being generated due to the archived trelliscopejs package.")
     }
+    return(ind)
 
   } else {
     
@@ -144,27 +145,32 @@ tre <- function(lis,id=NULL,varlis=NULL,smband=1/12,maxday=14,plot.ind=TRUE,plot
         max(unlist(lapply(x,max))))),act))
 
     ## generate plot: day observation
-    ptm <- Sys.time()
-    message("Generating trelliscope activity day plots... It may take some time.")
-    act <- tibble::add_column(act,panel = trelliscopejs::pmap_plot(list(id=act$ID,id_Nday=act$ID_Nday,
-                                                                        act_ori=act$activity,act_ind=act$activity_ind,
-                                                                        act_all=act$activity_all,act_max=act$activity_max,
-                                                                        band=smband,ori=plot.ori,lw=plot.sm), act_plot))
-    message(paste("Total time: ",round(difftime(Sys.time(),ptm,units="mins")[[1]],3)," mins",sep=""))
+    #ptm <- Sys.time()
+    message("No trelliscope individual plots are generated due to the archived trelliscopejs package.")
+    #act <- tibble::add_column(act,panel = trelliscopejs::pmap_plot(list(id=act$ID,id_Nday=act$ID_Nday,
+    #                                                                    act_ori=act$activity,act_ind=act$activity_ind,
+    #                                                                    act_all=act$activity_all,act_max=act$activity_max,
+    #                                                                    band=smband,ori=plot.ori,lw=plot.sm), act_plot))
+    #message(paste("Total time: ",round(difftime(Sys.time(),ptm,units="mins")[[1]],3)," mins",sep=""))
     #check memory: format(object.size(act),units="Mb",standard="legacy")
 
     ## trelliscope plot
+    #if(plot.tre==TRUE) {
+    #  act$activity <- act$activity_sm <- act$activity_ind <- act$activity_all <- NULL
+    #  if(is.null(plot.tre.path)) {
+    #    trelliscopejs::trelliscope(act,name = "Daily Activity Plot", nrow = 2, ncol = 2,
+    #                  path=getwd())
+    #  } else {
+    #    trelliscopejs::trelliscope(act,name = "Day Activity Plot", nrow = 2, ncol = 2,
+    #                  path=plot.tre.path)
+    #  }
+    #} else {
+    #  return(act)
+    #}
+    
     if(plot.tre==TRUE) {
-      act$activity <- act$activity_sm <- act$activity_ind <- act$activity_all <- NULL
-      if(is.null(plot.tre.path)) {
-        trelliscopejs::trelliscope(act,name = "Daily Activity Plot", nrow = 2, ncol = 2,
-                      path=getwd())
-      } else {
-        trelliscopejs::trelliscope(act,name = "Day Activity Plot", nrow = 2, ncol = 2,
-                      path=plot.tre.path)
-      }
-    } else {
-      return(act)
+      print("plot.tre=TRUE but no plot is being generated due to the archived trelliscopejs package.")
     }
+    return(act)
   }
 }
